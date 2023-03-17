@@ -14,11 +14,13 @@ import os
 def sobel_edge_detection(image, verbose=False):
 
     #Filtro Sobel
+    
+
     filter = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
 
-    new_image_x = cv.Sobel(matriz,cv.CV_64F,1,0,ksize=31)
+    new_image_x = cv.Sobel(image,cv.CV_64F,1,0,ksize=31)
  
-    new_image_y = cv.Sobel(matriz,cv.CV_64F,0,1,ksize=31)
+    new_image_y = cv.Sobel(image,cv.CV_64F,0,1,ksize=31)
  
 
     gradient_magnitude = np.sqrt(np.square(new_image_x) + np.square(new_image_y))
@@ -31,13 +33,14 @@ def sobel_edge_detection(image, verbose=False):
 
 def filtro_prewitt(img): #https://gist.github.com/rahit/c078cabc0a48f2570028bff397a9e154
 
-    img_gaussian = cv.GaussianBlur(img,(3,3),0)
+    kgb=gaussian_kernel(30,1.4)
+    imgb=cv.filter2D(img,-1,kgb)
     #kernelx = np.array([[-3,0,3],[-10,0,-10],[-3,0,3]])
     #kernely = np.array([[3,10,3],[0,0,0],[-3,10,-3]])
     kernelx = np.array([[1,1,1],[0,0,0],[-1,-1,-1]])
     kernely = np.array([[-1,0,1],[-1,0,1],[-1,0,1]])    
-    img_prewittx = cv.filter2D(img_gaussian, -1, kernelx)
-    img_prewitty = cv.filter2D(img_gaussian, -1, kernely)
+    img_prewittx = cv.filter2D(imgb, -1, kernelx)
+    img_prewitty = cv.filter2D(imgb, -1, kernely)
     final = np.sqrt(np.square(img_prewittx) + np.square(img_prewitty))
     final *= 255.0 / final.max()
     return final
@@ -55,6 +58,8 @@ def filtro_prewitt(img): #https://gist.github.com/rahit/c078cabc0a48f2570028bff3
 #--------------------------Filtro Roberts----------------------
 
 def Roberts(matriz): #https://www.geeksforgeeks.org/python-opencv-roberts-edge-detection/
+    kgb=gaussian_kernel(80,1.4)
+    imgb=cv.filter2D(matriz,-1,kgb)
     roberts_cross_v = np.array( [[1, 0 ],
                                 [0,-1 ]], np.float32 )
     
@@ -62,6 +67,19 @@ def Roberts(matriz): #https://www.geeksforgeeks.org/python-opencv-roberts-edge-d
                                 [ -1, 0 ]], np.float32)
     vertical = ndimage.convolve(matriz, roberts_cross_v )
     horizontal = ndimage.convolve(matriz, roberts_cross_h )
+    roberts = np.sqrt( np.square(horizontal) + np.square(vertical))
+    return roberts
+
+def Roberts_filtro(matriz): #https://www.geeksforgeeks.org/python-opencv-roberts-edge-detection/
+    kgb=gaussian_kernel(80,1.4)
+    imgb=cv.filter2D(matriz,-1,kgb)
+    roberts_cross_v = np.array( [[1, 0 ],
+                                [0,-1 ]], np.float32 )
+    
+    roberts_cross_h = np.array( [[ 0, 1 ],
+                                [ -1, 0 ]], np.float32)
+    vertical = ndimage.convolve(imgb, roberts_cross_v )
+    horizontal = ndimage.convolve(imgb, roberts_cross_h )
     roberts = np.sqrt( np.square(horizontal) + np.square(vertical))
     return roberts
 
@@ -187,7 +205,7 @@ arch = input('Inserta el nombre del archivo, por defecto es "Grogu.jpg"\n')
 os.chdir(r'C:\Users\elchi\Desktop\d')
 
 if EOFError and arch == "":
-    arch = "Nubes.jpg"
+    arch = "Grogu.jpg"
     img = arch
 else:
     arch = arch
@@ -216,24 +234,25 @@ img = cv.imread(img, cv.IMREAD_GRAYSCALE)
 img=img.astype(np.float32)
 
 #desenfoque gaussiano (suavizado, eliminación de ruido)
-kgb=gaussian_kernel(5,1.4)
-imgb=cv.filter2D(img,-1,kgb)
+#kgb=gaussian_kernel(5,1.4)
+#imgb=cv.filter2D(img,-1,kgb)
 
 # intensidad del gradiente (g), dirección del borde (t)
-g, t=sobel_filters(imgb)
+#g, t=sobel_filters(imgb)
 
 # supresión no máxima
-Z=non_max_suppression(g, t)
+#Z=non_max_suppression(g, t)
 
 # aplicación del doble umbral
-res,w,s=threshold(Z)
+#res,w,s=threshold(Z)
 
 # hysteresis
-res_img=hysteresis(res,w,s)
+#res_img=hysteresis(res,w,s)
 #---------------------Convertir imagen a filtro de Canny--------------------
 
 #Imprimir imagen con filtro de roberts
 r_imagen = Roberts(matriz)
+r2_imagen = Roberts_filtro(matriz)
 
 #Filtro Sobel
 s_imagen = sobel_edge_detection(img, verbose=True)
@@ -247,36 +266,38 @@ p_imagen = filtro_prewitt(img)
 
 
 plt.figure()
-plt.subplot(1,5,1)
-plt.imshow(img,cmap="gray", interpolation="nearest")
-plt.title('Original'),plt.axis('off')
+#plt.subplot(1,5,1)
+#plt.imshow(img,cmap="gray", interpolation="nearest")
+#plt.title('Original'),plt.axis('off')
 
 
-plt.subplot(1,5,2)
-plt.imshow(res_img,cmap="gray", interpolation="nearest")
-plt.title('Filtro Canny'),plt.axis('off')
+#plt.subplot(1,5,2)
+#plt.imshow(res_img,cmap="gray", interpolation="nearest")
+#plt.title('Filtro Canny'),plt.axis('off')
 
 
-plt.subplot(1,5,3)
+#plt.subplot(1,5,3)
 plt.imshow(r_imagen,cmap="gray", interpolation="nearest")
 plt.title('Filtro Roberts'),plt.axis('off')
-
-
-plt.subplot(1,5,4)
-plt.imshow(s_imagen,cmap="gray", interpolation="nearest")
-plt.title('Filtro sobel'),plt.axis('off')
-
-
-plt.subplot(1,5,5)
-plt.imshow(p_imagen,cmap="gray", interpolation="nearest")
-plt.title('Filtro prewitt'),plt.axis('off')
-
-
 plt.show()
+plt.imshow(r2_imagen,cmap="gray", interpolation="nearest")
+plt.title('Filtro Roberts'),plt.axis('off')
+plt.show()
+#plt.subplot(1,5,4)
+#plt.imshow(s_imagen,cmap="gray", interpolation="nearest")
+#plt.title('Filtro sobel'),plt.axis('off')
+
+
+#plt.subplot(1,5,5)
+#plt.imshow(p_imagen,cmap="gray", interpolation="nearest")
+#plt.title('Filtro prewitt'),plt.axis('off')
+
+
+#plt.show()
 
 input()
-cv.imwrite("Original.jpg",img,)
-cv.imwrite("Canny.jpg",res_img)
-#cv.imwrite("Roberts.jpg",r_imagen)
-cv.imwrite("Sobel.jpg",s_imagen)
-cv.imwrite("Prewitt.jpg",p_imagen)
+#cv.imwrite("Original.jpg",img,)
+#cv.imwrite("Canny.jpg",res_img)
+#cv.imwrite("Roberts.png",r_imagen)
+#cv.imwrite("Sobel.jpg",s_imagen)
+#cv.imwrite("Prewitt.jpg",p_imagen)
